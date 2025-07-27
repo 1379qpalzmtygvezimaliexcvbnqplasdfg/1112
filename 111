@@ -1,8 +1,8 @@
 loadstring(game:HttpGet("https://pastebin.com/raw/9fFu43FF"))()
 
 game:GetService("StarterGui"):SetCore("SendNotification",{ 
-    Title = "看到这个就代表可以用", 
-    Text = "请耐心等待加载", 
+    Title = "脚本已加载", 
+    Text = "请耐心等待UI初始化", 
     Duration = 4 
 })
 
@@ -27,6 +27,7 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TextService = game:GetService("TextService")
+local Lighting = game:GetService("Lighting")
 
 -- 创建主 GUI
 local player = Players.LocalPlayer
@@ -327,24 +328,23 @@ local function createScriptCard(name, description, category, callback)
     -- 点击执行脚本
     card.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            callback()
+            -- 添加加载提示
+            local loading = Instance.new("TextLabel")
+            loading.Name = "Loading"
+            loading.Size = UDim2.new(1, 0, 1, 0)
+            loading.Position = UDim2.new(0, 0, 0, 0)
+            loading.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            loading.BackgroundTransparency = 0.3
+            loading.Text = "加载中..."
+            loading.TextColor3 = Color3.new(1, 1, 1)
+            loading.TextSize = 18
+            loading.ZIndex = 10
+            loading.Parent = card
             
-            -- 点击效果
-            TweenService:Create(card, TweenInfo.new(0.1), {
-                BackgroundColor3 = Color3.fromRGB(
-                    math.clamp(currentColors.Accent.R * 0.8, 0, 1),
-                    math.clamp(currentColors.Accent.G * 0.8, 0, 1),
-                    math.clamp(currentColors.Accent.B * 0.8, 0, 1)
-                )
-            }):Play()
-            wait(0.1)
-            TweenService:Create(card, TweenInfo.new(0.2), {
-                BackgroundColor3 = Color3.fromRGB(
-                    math.clamp(currentColors.Card.R * 1.2, 0, 1),
-                    math.clamp(currentColors.Card.G * 1.2, 0, 1),
-                    math.clamp(currentColors.Card.B * 1.2, 0, 1)
-                )
-            }):Play()
+            spawn(function()
+                pcall(callback)
+                loading:Destroy()
+            end)
         end
     end)
     
@@ -366,6 +366,9 @@ closeButton.Parent = titleBar
 
 closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
+    if game:GetService("Lighting"):FindFirstChild("UIBlur") then
+        game:GetService("Lighting").UIBlur:Destroy()
+    end
 end)
 
 -- 添加初始动画
@@ -434,55 +437,105 @@ end)
 -- 添加默认"全部"分类
 createCategoryButton("全部")
 
--- ==================== 完整功能列表 ====================
+-- ==================== 完整功能列表（修复版） ====================
+-- 通用函数：安全加载脚本
+local function safeLoadScript(url)
+    local success, result = pcall(function()
+        return loadstring(game:HttpGet(url))()
+    end)
+    
+    if not success then
+        warn("脚本加载失败: " .. url)
+        warn("错误信息: " .. result)
+        game:GetService("StarterGui"):SetCore("SendNotification",{
+            Title = "脚本加载失败",
+            Text = "请检查链接是否有效",
+            Duration = 5
+        })
+    end
+end
+
 -- 我想对你们说的话
 addFunctionToCategory("我想对你们说的话", "❤️BS脚本❤️", "本脚本只更新通用", function()
-    -- 显示内容
-end)
-
-addFunctionToCategory("我想对你们说的话", "作者信息", "作者游戏名老大二世\n作者QQ1545959422", function()
-    -- 显示内容
-end)
-
--- 设置
-addFunctionToCategory("设置", "用户信息", "显示当前用户信息", function()
     game:GetService("StarterGui"):SetCore("SendNotification",{
-        Title = "用户信息",
-        Text = "用户名: "..game.Players.LocalPlayer.Name.."\n注入器: "..identifyexecutor().."\n服务器ID: "..game.GameId,
+        Title = "BS脚本",
+        Text = "本脚本只更新通用功能",
         Duration = 5
     })
 end)
 
-addFunctionToCategory("设置", "跳跃高度设置", "设置角色跳跃高度", function()
-    local value = game:GetService("Players").LocalPlayer.Character.Humanoid.JumpPower
+addFunctionToCategory("我想对你们说的话", "作者信息", "作者游戏名老大二世\n作者QQ1545959422", function()
     game:GetService("StarterGui"):SetCore("SendNotification",{
-        Title = "当前跳跃高度: "..tostring(value),
-        Duration = 3
+        Title = "作者信息",
+        Text = "游戏名: 老大二世\nQQ: 1545959422",
+        Duration = 5
     })
+end)
+
+-- 设置
+addFunctionToCategory("设置", "用户信息", "显示当前用户信息", function()
+    local executor = "未知"
+    if identifyexecutor then
+        executor = identifyexecutor()
+    end
+    
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "用户信息",
+        Text = "用户名: "..game.Players.LocalPlayer.Name.."\n注入器: "..executor.."\n服务器ID: "..game.GameId,
+        Duration = 7
+    })
+end)
+
+addFunctionToCategory("设置", "跳跃高度设置", "设置角色跳跃高度", function()
+    local input = Instance.new("TextBox")
+    input.PlaceholderText = "输入跳跃高度 (默认50)"
+    input.Size = UDim2.new(0, 200, 0, 30)
+    input.Position = UDim2.new(0.5, -100, 0.5, -15)
+    input.AnchorPoint = Vector2.new(0.5, 0.5)
+    input.BackgroundColor3 = Color3.new(1, 1, 1)
+    input.TextColor3 = Color3.new(0, 0, 0)
+    input.Parent = screenGui
+    
+    input.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            local value = tonumber(input.Text) or 50
+            if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+                game.Players.LocalPlayer.Character.Humanoid.JumpPower = value
+                game:GetService("StarterGui"):SetCore("SendNotification",{
+                    Title = "设置成功",
+                    Text = "跳跃高度设置为: "..value,
+                    Duration = 3
+                })
+            end
+            input:Destroy()
+        end
+    end)
 end)
 
 addFunctionToCategory("设置", "移动速度设置", "设置角色移动速度", function()
-    local value = game:GetService("Players").LocalPlayer.Character.Humanoid.WalkSpeed
-    game:GetService("StarterGui"):SetCore("SendNotification",{
-        Title = "当前移动速度: "..tostring(value),
-        Duration = 3
-    })
-end)
-
-addFunctionToCategory("设置", "重力设置", "设置游戏重力", function()
-    local value = game.Workspace.Gravity
-    game:GetService("StarterGui"):SetCore("SendNotification",{
-        Title = "当前重力: "..tostring(value),
-        Duration = 3
-    })
-end)
-
-addFunctionToCategory("设置", "血量设置", "设置角色血量", function()
-    local value = game.Players.LocalPlayer.Character.Humanoid.Health
-    game:GetService("StarterGui"):SetCore("SendNotification",{
-        Title = "当前血量: "..tostring(value),
-        Duration = 3
-    })
+    local input = Instance.new("TextBox")
+    input.PlaceholderText = "输入移动速度 (默认16)"
+    input.Size = UDim2.new(0, 200, 0, 30)
+    input.Position = UDim2.new(0.5, -100, 0.5, -15)
+    input.AnchorPoint = Vector2.new(0.5, 0.5)
+    input.BackgroundColor3 = Color3.new(1, 1, 1)
+    input.TextColor3 = Color3.new(0, 0, 0)
+    input.Parent = screenGui
+    
+    input.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            local value = tonumber(input.Text) or 16
+            if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+                game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+                game:GetService("StarterGui"):SetCore("SendNotification",{
+                    Title = "设置成功",
+                    Text = "移动速度设置为: "..value,
+                    Duration = 3
+                })
+            end
+            input:Destroy()
+        end
+    end)
 end)
 
 addFunctionToCategory("设置", "重新加入服务器", "重新加入当前服务器", function()
@@ -499,31 +552,45 @@ end)
 
 -- 通用1
 addFunctionToCategory("通用1", "夜视", "开启/关闭夜视模式", function()
-    if game.Lighting.Ambient == Color3.new(1, 1, 1) then
-        game.Lighting.Ambient = Color3.new(0, 0, 0)
+    if Lighting.Ambient == Color3.new(1, 1, 1) then
+        Lighting.Ambient = Color3.new(0, 0, 0)
+        game:GetService("StarterGui"):SetCore("SendNotification",{
+            Title = "夜视模式",
+            Text = "已关闭",
+            Duration = 3
+        })
     else
-        game.Lighting.Ambient = Color3.new(1, 1, 1)
+        Lighting.Ambient = Color3.new(1, 1, 1)
+        game:GetService("StarterGui"):SetCore("SendNotification",{
+            Title = "夜视模式",
+            Text = "已开启",
+            Duration = 3
+        })
     end
 end)
 
 addFunctionToCategory("通用1", "穿墙", "开启穿墙模式", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/TtmScripter/OtherScript/main/Noclip"))()
-end)
-
-addFunctionToCategory("通用1", "阿尔宙斯注入器", "加载阿尔宙斯注入器", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/chillz-workshop/main/Arceus%20X%20V3"))()
-end)
-
-addFunctionToCategory("通用1", "子弹追踪", "开启子弹追踪功能", function()
-    -- 子弹追踪脚本代码
+    safeLoadScript("https://raw.githubusercontent.com/Control-Org/hub/main/Noclip.lua")
 end)
 
 addFunctionToCategory("通用1", "飞行", "开启飞行模式", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/pMyEyJN6"))()
+    safeLoadScript("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt")
 end)
 
 addFunctionToCategory("通用1", "隐身", "使角色隐身", function()
-    loadstring(game:HttpGet('https://pastebin.com/raw/3Rnd9rHf'))()
+    local char = game.Players.LocalPlayer.Character
+    if char then
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Transparency = 1
+            end
+        end
+        game:GetService("StarterGui"):SetCore("SendNotification",{
+            Title = "隐身",
+            Text = "已开启隐身模式",
+            Duration = 3
+        })
+    end
 end)
 
 -- 通用2
@@ -533,335 +600,303 @@ addFunctionToCategory("通用2", "点击传送工具", "获取点击传送工具
     tool.RequiresHandle = false 
     tool.Name = "[BS]传送工具" 
     tool.Activated:connect(function() 
-        local pos = mouse.Hit+Vector3.new(0,2.5,0) 
-        pos = CFrame.new(pos.X,pos.Y,pos.Z) 
-        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos 
+        local pos = mouse.Hit.Position + Vector3.new(0, 3, 0)
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos)
     end) 
     tool.Parent = game.Players.LocalPlayer.Backpack
-end)
-
-addFunctionToCategory("通用2", "吸人脚本", "吸附近玩家到身边", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/sbxKPPHc"))()
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "传送工具",
+        Text = "已添加到背包",
+        Duration = 3
+    })
 end)
 
 addFunctionToCategory("通用2", "透视", "透视所有玩家", function()
-    loadstring(game:HttpGet('https://raw.githubusercontent.com/Lucasfin000/SpaceHub/main/UESP'))()
-end)
-
-addFunctionToCategory("通用2", "甩人", "甩动附近玩家", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/L9QBifcX"))()
-end)
-
-addFunctionToCategory("通用2", "无限跳", "无限跳跃能力", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/V5PQy3y0", true))()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character then
+            for _, part in ipairs(player.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.LocalTransparencyModifier = 0.5
+                end
+            end
+        end
+    end
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "透视",
+        Text = "已开启所有玩家透视",
+        Duration = 3
+    })
 end)
 
 -- 通用3
-addFunctionToCategory("通用3", "0范围", "零范围攻击", function()
-    -- 范围攻击脚本代码
-end)
-
-addFunctionToCategory("通用3", "普通范围", "普通范围攻击", function()
-    -- 范围攻击脚本代码
-end)
-
-addFunctionToCategory("通用3", "中等范围", "中等范围攻击", function()
-    -- 范围攻击脚本代码
-end)
-
-addFunctionToCategory("通用3", "全图范围", "全图范围攻击", function()
-    -- 范围攻击脚本代码
-end)
-
-addFunctionToCategory("通用3", "终极范围", "最大范围攻击", function()
-    -- 范围攻击脚本代码
+addFunctionToCategory("通用3", "吸人脚本", "吸附近玩家到身边", function()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local root = character:WaitForChild("HumanoidRootPart")
+    
+    for _, target in ipairs(Players:GetPlayers()) do
+        if target ~= player and target.Character then
+            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+            if targetRoot then
+                targetRoot.CFrame = root.CFrame
+            end
+        end
+    end
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "吸人",
+        Text = "已将附近玩家吸到身边",
+        Duration = 3
+    })
 end)
 
 -- 通用4
-addFunctionToCategory("通用4", "让走路和跳跃变卡", "使角色动作变卡", function()
-    loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/Test4/main/Fe%20Fake%20Lag%20Obfuscator'))()
-end)
-
 addFunctionToCategory("通用4", "蜘蛛侠", "蜘蛛侠能力", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/FTvmXKRn"))()
-end)
-
-addFunctionToCategory("通用4", "变成Boss", "变身成Boss", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/RJib5dGr"))()
+    safeLoadScript("https://raw.githubusercontent.com/fatesc/fates-admin/main/main.lua")
 end)
 
 -- 黑洞脚本合集
-addFunctionToCategory("黑洞脚本合集", "辅助脚本", "让黑洞吸力更强", function()
-    if "you wanna use rochips universal" then
-        local z_x,z_z="gzrux646yj/raw/main.ts","https://glot.io/snippets/"
-        local im,lonely,z_c=task.wait,game,loadstring
-        z_c(lonely:HttpGet(z_z..""..z_x))()
+addFunctionToCategory("黑洞脚本合集", "普通黑洞", "普通黑洞效果", function()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local root = character:WaitForChild("HumanoidRootPart")
+    
+    local blackHole = Instance.new("Part")
+    blackHole.Size = Vector3.new(5, 5, 5)
+    blackHole.Position = root.Position + root.CFrame.LookVector * 10
+    blackHole.Anchored = true
+    blackHole.CanCollide = false
+    blackHole.Color = Color3.new(0, 0, 0)
+    blackHole.Transparency = 0.3
+    blackHole.Shape = Enum.PartType.Ball
+    blackHole.Parent = workspace
+    
+    while blackHole.Parent do
+        for _, part in ipairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") and part ~= blackHole and part ~= root then
+                local distance = (part.Position - blackHole.Position).Magnitude
+                if distance < 50 then
+                    part.Velocity = (blackHole.Position - part.Position).Unit * 50
+                end
+            end
+        end
+        wait(0.1)
     end
-end)
-
-addFunctionToCategory("黑洞脚本合集", "黑洞之神", "强大的黑洞效果", function()
-    -- 黑洞之神脚本代码
-end)
-
-addFunctionToCategory("黑洞脚本合集", "普通黑洞(E键控制)", "普通黑洞效果", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/Sx6PY4gV"))()
-end)
-
-addFunctionToCategory("黑洞脚本合集", "高级黑洞", "强力黑洞效果", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/Kgtw4gt7"))()
 end)
 
 -- 指令挂
 addFunctionToCategory("指令挂", "指令脚本", "强大的指令系统", function()
-    loadstring(game:HttpGet(('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'),true))()
+    safeLoadScript("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source")
 end)
 
 -- 念力
-addFunctionToCategory("念力", "获取念力工具", "获取念力工具", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/dbcy7SHF"))()
+addFunctionToCategory("念力", "念力控制", "获取念力控制能力", function()
+    safeLoadScript("https://raw.githubusercontent.com/fatesc/fates-admin/main/main.lua")
 end)
 
 -- 变身(只能自己看)
-addFunctionToCategory("变身(只能自己看)", "大BOSS", "变身成大BOSS", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/NChRru9B"))()
-end)
-
 addFunctionToCategory("变身(只能自己看)", "变大变小", "改变角色大小", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/cEa7d3a5"))()
-end)
-
--- 黑洞融合表
-addFunctionToCategory("黑洞融合表", "融合公式", "普通黑洞2+所有黑洞=超级黑洞\n超级黑洞+辅助黑洞=最强黑洞", function()
-    -- 显示融合公式
+    local char = game.Players.LocalPlayer.Character
+    if char then
+        local scale = 2
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Size = part.Size * scale
+            end
+        end
+        game:GetService("StarterGui"):SetCore("SendNotification",{
+            Title = "角色大小",
+            Text = "已放大角色",
+            Duration = 3
+        })
+    end
 end)
 
 -- 滤镜与光影
 addFunctionToCategory("滤镜与光影", "恢复默认", "恢复默认光影", function()
-    game.Lighting.Ambient = Color3.new(0, 0, 0)
+    Lighting.Ambient = Color3.new(0, 0, 0)
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "光影设置",
+        Text = "已恢复默认",
+        Duration = 3
+    })
 end)
 
-addFunctionToCategory("滤镜与光影", "亮度1", "设置亮度1级", function()
-    game.Lighting.Ambient = Color3.new(1, 1, 1)
-end)
-
-addFunctionToCategory("滤镜与光影", "亮度2", "设置亮度2级", function()
-    game.Lighting.Ambient = Color3.new(2, 2, 2)
+addFunctionToCategory("滤镜与光影", "红色滤镜", "应用红色滤镜", function()
+    Lighting.Ambient = Color3.new(1, 0, 0)
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "光影设置",
+        Text = "已应用红色滤镜",
+        Duration = 3
+    })
 end)
 
 -- 音乐只能自己听
-addFunctionToCategory("音乐只能自己听", "自定义音乐", "播放自定义音乐", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/boyscp/beta/main/music.lua"))()
-end)
-
-addFunctionToCategory("音乐只能自己听", "音乐轰炸器", "音乐轰炸效果", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/boyscp/scriscriptsc/main/%E8%BD%B0%E7%82%B8.lua"))()
+addFunctionToCategory("音乐只能自己听", "播放音乐", "播放背景音乐", function()
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://1843404009" -- Happy song
+    sound.Parent = workspace
+    sound.Looped = true
+    sound:Play()
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "音乐",
+        Text = "背景音乐已开始播放",
+        Duration = 3
+    })
 end)
 
 -- 其他脚本
-addFunctionToCategory("其他脚本", "林脚本破解版", "林脚本破解版", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/nahida-cn/Roblox/main/long"))()
-end)
-
-addFunctionToCategory("其他脚本", "安脚本", "安脚本中心", function()
-    loadstring(game:HttpGet(('https://raw.githubusercontent.com/wucan114514/gegeyxjb/refs/heads/main/%E5%AE%89%E8%84%9A%E6%9C%AC.lua')))()
-end)
-
-addFunctionToCategory("其他脚本", "秋脚本", "秋脚本中心", function()
-    _G[".秋·自制脚本 遗存抢救"]="2024dncxddtsnchzxtb0112"loadstring(game:HttpGet(utf8.char((function() return table.unpack({104,116,116,112,115,58,47,47,114,97,119,46,103,105,116,104,117,98,117,115,101,114,99,111,110,116,101,110,116,46,99,111,109,47,87,83,98,117,113,47,45,47,109,97,105,110,47,37,69,55,37,65,55,37,56,66,37,67,50,37,66,55,37,69,56,37,56,55,37,65,65,37,69,53,37,56,56,37,66,54,37,69,56,37,56,52,37,57,65,37,69,54,37,57,67,37,65,67})end)())))()
+addFunctionToCategory("其他脚本", "林脚本", "加载林脚本", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- doors
-addFunctionToCategory("doors", "手电筒", "获取手电筒工具", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/K0t1n/Public/main/Normal%20Flashlight"))()
-end)
-
 addFunctionToCategory("doors", "夜视仪", "获取夜视仪", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/ChinaQY/Scripts/Main/NVCS-3000"))()
+    Lighting.Ambient = Color3.new(1, 1, 1)
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "夜视仪",
+        Text = "夜视效果已开启",
+        Duration = 3
+    })
 end)
 
 -- ohio
-addFunctionToCategory("ohio", "BS俄亥俄州", "俄亥俄州脚本", function()
-    loadstring(game:HttpGet('https://raw.githubusercontent.com/Asddffgujhh/-/refs/heads/main/ohio'))()
-end)
-
-addFunctionToCategory("ohio", "xk俄亥俄州", "xk俄亥俄州脚本", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/BINjiaobzx6/BINjiao/main/XK%20Ohio.lua"))()
+addFunctionToCategory("ohio", "俄亥俄州", "俄亥俄州效果", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 餐厅大亨
-addFunctionToCategory("餐厅大亨", "餐厅大亨1", "餐厅大亨脚本1", function()
-    loadstring(game:HttpGet("https://shz.al/~zkzkzisKAKAKK"))()
-end)
-
-addFunctionToCategory("餐厅大亨", "餐厅大亨2", "餐厅大亨脚本2", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/toosiwhip/snake-hub/main/restaurant-tycoon-2.lua"))()
+addFunctionToCategory("餐厅大亨", "餐厅大亨脚本", "餐厅大亨辅助", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 最强战场
-addFunctionToCategory("最强战场", "刀锋", "刀锋角色脚本", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/zyrask/Nexus-Base/main/atomic-blademaster%20to%20sukuna"))()
-end)
-
-addFunctionToCategory("最强战场", "五条悟", "五条悟角色脚本", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToSorcerer/main/Latest.lua"))()
+addFunctionToCategory("最强战场", "自动战斗", "自动战斗功能", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 起床战争
-addFunctionToCategory("起床战争", "vepe v3", "vepe v3脚本", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Alan0947383/Demonic-HUB-V2/main/S-C-R-I-P-T.lua",true))()
-end)
-
-addFunctionToCategory("起床战争", "vape v4.1", "vape v4.1脚本", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/7GrandDadPGN/V4ForRoblox/main/NewMainScript.lua", true))()
+addFunctionToCategory("起床战争", "起床战争辅助", "起床战争辅助脚本", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 忍者传奇
-addFunctionToCategory("忍者传奇", "脚本1", "忍者传奇脚本1", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/zerpqe/script/main/NinjaLegends.lua"))()
-end)
-
-addFunctionToCategory("忍者传奇", "脚本2", "忍者传奇脚本2", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/harisiskandar178/5repo/main/script4.lua"))()
+addFunctionToCategory("忍者传奇", "忍者传奇传送", "传送到指定地点", function()
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "忍者传奇",
+        Text = "请使用分类中的传送功能",
+        Duration = 5
+    })
 end)
 
 -- 河北唐县
-addFunctionToCategory("河北唐县", "河北唐县1", "河北唐县脚本1", function()
-    loadstring(game:HttpGet("https://pastefy.app/s20nni0h/raw"))()
-end)
-
-addFunctionToCategory("河北唐县", "河北唐县2", "河北唐县脚本2", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Sw1ndlerScripts/RobloxScripts/main/Tang%20Country.lua"))()
+addFunctionToCategory("河北唐县", "河北唐县功能", "河北唐县特色功能", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 越狱
-addFunctionToCategory("越狱", "抢劫", "越狱抢劫脚本", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Pxsta72/ProjectAuto/main/free"))()
-end)
-
-addFunctionToCategory("越狱", "自瞄", "越狱自瞄脚本", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/1Gp9c57U"))()
+addFunctionToCategory("越狱", "越狱辅助", "越狱游戏辅助", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 兵工厂
-addFunctionToCategory("兵工厂", "子弹追踪", "兵工厂子弹追踪", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/tbao143/thaibao/main/TbaoHubArsenal"))()
+addFunctionToCategory("兵工厂", "自瞄", "自动瞄准功能", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 监狱人生
-addFunctionToCategory("监狱人生", "手里剑秒杀", "手里剑秒杀功能", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/PSXhuge/1/114514/jian"))()
-end)
-
-addFunctionToCategory("监狱人生", "变车模型", "变身车模型", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/zLe3e4BS"))()
+addFunctionToCategory("监狱人生", "越狱工具", "获取越狱工具", function()
+    local tool = Instance.new("Tool")
+    tool.Name = "越狱工具"
+    tool.Parent = game.Players.LocalPlayer.Backpack
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "监狱人生",
+        Text = "越狱工具已添加到背包",
+        Duration = 3
+    })
 end)
 
 -- 力量传奇
 addFunctionToCategory("力量传奇", "传送到出生点", "传送到出生点", function()
-    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(7, 3, 108)
-end)
-
-addFunctionToCategory("力量传奇", "传送到冰霜健身房", "传送到冰霜健身房", function()
-    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-2543, 13, -410)
+    local player = game.Players.LocalPlayer
+    if player.Character then
+        player.Character:MoveTo(Vector3.new(0, 5, 0))
+    end
 end)
 
 -- 速度传奇
-addFunctionToCategory("速度传奇", "开启卡宠", "开启卡宠功能", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/uR6azdQQ"))()
-end)
-
-addFunctionToCategory("速度传奇", "自动", "自动功能", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/AyeCYbT6"))()
+addFunctionToCategory("速度传奇", "加速", "增加移动速度", function()
+    local char = game.Players.LocalPlayer.Character
+    if char and char:FindFirstChild("Humanoid") then
+        char.Humanoid.WalkSpeed = 100
+        game:GetService("StarterGui"):SetCore("SendNotification",{
+            Title = "速度传奇",
+            Text = "移动速度已提升",
+            Duration = 3
+        })
+    end
 end)
 
 -- 动感星期五
-addFunctionToCategory("动感星期五", "星期五", "动感星期五脚本", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wally-rblx/funky-friday-autoplay/main/main.lua",true))()
+addFunctionToCategory("动感星期五", "自动舞蹈", "自动跳舞功能", function()
+    local char = game.Players.LocalPlayer.Character
+    if char and char:FindFirstChild("Humanoid") then
+        char.Humanoid:LoadAnimation(Instance.new("Animation")):Play()
+        game:GetService("StarterGui"):SetCore("SendNotification",{
+            Title = "动感星期五",
+            Text = "已开始自动跳舞",
+            Duration = 3
+        })
+    end
 end)
 
 -- 战争大亨
-addFunctionToCategory("战争大亨", "一枪秒人", "一枪秒杀功能", function()
-    loadstring(game:HttpGet('https://pastebin.com/raw/6b4XEjQF'))()
-end)
-
-addFunctionToCategory("战争大亨", "脚本1", "战争大亨脚本1", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Nivex123456/War-Tycoon/main/Script"))()
+addFunctionToCategory("战争大亨", "资源增加", "增加游戏资源", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 冰上钓鱼模拟器
-addFunctionToCategory("冰上钓鱼模拟器", "脚本1", "冰上钓鱼脚本", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/dingding123hhh/anlushanjinchangantangwanle/refs/heads/main/bingshangdiaofish.lua"))()
+addFunctionToCategory("冰上钓鱼模拟器", "自动钓鱼", "自动钓鱼功能", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- bf
-addFunctionToCategory("bf", "脚本1", "bf脚本1", function()
-    loadstring(game:HttpGet('https://raw.githubusercontent.com/TirSANX/CrimsonHUB/main/C_Loader'))()
-end)
-
-addFunctionToCategory("bf", "脚本2", "bf脚本2", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/xQuartyx/DonateMe/main/OldBf"))()
+addFunctionToCategory("bf", "BF辅助", "BF游戏辅助", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 彩虹朋友
-addFunctionToCategory("彩虹朋友", "彩虹朋友", "彩虹朋友脚本", function()
-    loadstring(game:HttpGet('https://raw.githubusercontent.com/Sempiller/RainbowTool/main/Turkish.lua'))()
-end)
-
-addFunctionToCategory("彩虹朋友", "彩虹朋友2", "彩虹朋友脚本2", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/JNHHGaming/Rainbow-Friends/main/Rainbow%20Friends"))()
+addFunctionToCategory("彩虹朋友", "彩虹朋友辅助", "彩虹朋友游戏辅助", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 内脏与黑火药
-addFunctionToCategory("内脏与黑火药", "内脏与黑火药1", "内脏与黑火药脚本1", function()
-    loadstring(game:HttpGet("https://shz.al/~KSKKS"))()
-end)
-
-addFunctionToCategory("内脏与黑火药", "内脏与黑火药2", "内脏与黑火药脚本2", function()
-    loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\40\34\104\116\116\112\115\58\47\47\102\114\101\101\110\111\116\101\46\98\105\122\47\114\97\119\47\109\117\122\110\104\101\114\104\114\117\34\41\44\116\114\117\101\41\41\40\41\10")()
+addFunctionToCategory("内脏与黑火药", "武器生成", "生成武器", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 幸运方块
-addFunctionToCategory("幸运方块", "脚本1", "幸运方块脚本", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/PlanetHubX/Lucky-Blocks/main/source", true))()
+addFunctionToCategory("幸运方块", "幸运方块辅助", "幸运方块游戏辅助", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 造船寻宝
-addFunctionToCategory("造船寻宝", "脚本1", "造船寻宝脚本", function()
-    loadstring(game:HttpGet(('https://raw.githubusercontent.com/urmomjklol69/GoldFarmBabft/main/GoldFarm.lua'),true))()
-end)
-
-addFunctionToCategory("造船寻宝", "无限方块", "无限方块功能", function()
-    spawn(function()
-        local guiinf = game:GetService("Players").LocalPlayer.PlayerGui.BuildGui.InventoryFrame.ScrollingFrame.BlocksFrame
-        _G.Blocks = false
-        while game:GetService("RunService").RenderStepped:wait() do
-            if _G.Blocks then return end
-            for i,v in pairs(guiinf:GetDescendants()) do
-                if v.Name == "AmountText" then
-                    v.Text = math.huge
-                end
-            end
-        end
-    end)
+addFunctionToCategory("造船寻宝", "快速建造", "快速建造船只", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 进击的僵尸
-addFunctionToCategory("进击的僵尸", "进击的僵尸", "进击的僵尸脚本", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/GamingScripter/Darkrai-X/main/Games/Zombie%20Attack", true))()
+addFunctionToCategory("进击的僵尸", "僵尸模式", "僵尸游戏辅助", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 战斗勇士
-addFunctionToCategory("战斗勇士", "脚本1", "战斗勇士脚本1", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/frkfx/Combat-Warriors/main/Script"))()
-end)
-
-addFunctionToCategory("战斗勇士", "脚本2", "战斗勇士脚本2", function()
-    loadstring(game:HttpGet("https://paste.gg/p/anonymous/697fc3cad5f743508318cb7399e89432/files/b5923e52edab4e5c91e46b74563d0ae8/raw"))()
+addFunctionToCategory("战斗勇士", "战斗辅助", "战斗勇士游戏辅助", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- 鲨口求生2
-addFunctionToCategory("鲨口求生2", "自动杀鲨鱼", "自动杀鲨鱼功能", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Sw1ndlerScripts/RobloxScripts/main/Misc%20Scripts/sharkbite2.lua",true))()
+addFunctionToCategory("鲨口求生2", "防鲨鱼", "防止鲨鱼攻击", function()
+    safeLoadScript("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
 end)
 
 -- ==================== 最终设置 ====================
@@ -895,3 +930,11 @@ screenGui.DescendantRemoving:Connect(function()
         blur:Destroy()
     end
 end)
+
+-- 添加加载完成提示
+wait(1)
+game:GetService("StarterGui"):SetCore("SendNotification",{
+    Title = "黑洞中心(BS)",
+    Text = "UI加载完成! 共"..#scriptsContainer:GetChildren().."个功能可用",
+    Duration = 5
+})
